@@ -1,0 +1,54 @@
+# Shopify Admin MCP
+
+Shopify Admin API操作用のMCPサーバー
+
+## セットアップ
+
+```bash
+npm install
+```
+
+## 環境変数
+
+```
+SHOPIFY_SHOP_DOMAIN=your-store.myshopify.com
+SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
+```
+
+## Claude Desktop設定
+
+```json
+{
+  "mcpServers": {
+    "shopify-admin": {
+      "command": "node",
+      "args": ["--experimental-strip-types", "/path/to/shopify-admin-mcp/src/index.ts"],
+      "env": {
+        "SHOPIFY_SHOP_DOMAIN": "your-store.myshopify.com",
+        "SHOPIFY_ACCESS_TOKEN": "shpat_xxxxx"
+      }
+    }
+  }
+}
+```
+
+## ツール一覧
+
+| ツール | 説明 |
+|--------|------|
+| `test_connection` | API接続確認 |
+| `get_monthly_ranking` | 月間売上ランキング取得 |
+| `create_collection` | Collection作成 |
+| `get_collections` | Collection検索・一覧 |
+| `get_collection` | Collection詳細取得 |
+| `add_products_to_collection` | 商品追加・並び順設定 |
+| `duplicate_collection` | Collection複製 |
+| `get_blogs` | ブログ一覧取得 |
+| `get_articles` | 記事一覧取得 |
+| `create_article` | 記事作成 |
+
+## 必要なAPIスコープ
+
+- `read_orders`
+- `read_products`, `write_products`
+- `read_content`, `write_content`

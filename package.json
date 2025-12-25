@@ -1,0 +1,13 @@
+{
+  "name": "shopify-admin-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Shopify Admin API operations",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "test-connection": "node --experimental-strip-types src/test-connection.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

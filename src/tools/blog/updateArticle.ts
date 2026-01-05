@@ -42,6 +42,7 @@ export async function updateArticle(
     id: string;
     title?: string;
     contentHtml?: string;
+    handle?: string;
     author?: string;
     tags?: string[];
     published?: boolean;
@@ -54,6 +55,7 @@ export async function updateArticle(
 
   if (updates.title) article.title = updates.title;
   if (updates.contentHtml) article.body = updates.contentHtml;
+  if (updates.handle) article.handle = updates.handle;
   if (updates.author) article.author = { name: updates.author };
   if (updates.tags) article.tags = updates.tags;
   if (updates.published !== undefined) article.isPublished = updates.published;

@@ -42,6 +42,7 @@ export async function createArticle(
     blogId: string;
     title: string;
     contentHtml: string;
+    handle?: string;
     author?: string;
     tags?: string[];
     published?: boolean;
@@ -54,6 +55,7 @@ export async function createArticle(
     body: params.contentHtml,
   };
 
+  if (params.handle) article.handle = params.handle;
   if (params.author) article.author = { name: params.author };
   if (params.tags) article.tags = params.tags;
   if (params.published !== undefined) article.isPublished = params.published;

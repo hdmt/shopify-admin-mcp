@@ -78,7 +78,6 @@ server.tool(
     title: z.string().describe('Collection title'),
     handle: z.string().optional().describe('URL handle (auto-generated if not specified)'),
     descriptionHtml: z.string().optional().describe('Collection description in HTML'),
-    published: z.boolean().optional().default(true).describe('Whether to publish the collection'),
     sortOrder: z.enum(['MANUAL', 'BEST_SELLING', 'ALPHA_ASC', 'ALPHA_DESC', 'PRICE_ASC', 'PRICE_DESC', 'CREATED', 'CREATED_DESC'])
       .optional()
       .default('MANUAL')

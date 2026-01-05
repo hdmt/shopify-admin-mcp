@@ -52,7 +52,6 @@ export async function createCollection(
     title: string;
     handle?: string;
     descriptionHtml?: string;
-    published?: boolean;
     sortOrder?: CollectionSortOrder;
   }
 ): Promise<CreateCollectionResult> {
@@ -63,11 +62,7 @@ export async function createCollection(
 
   if (params.handle) input.handle = params.handle;
   if (params.descriptionHtml) input.descriptionHtml = params.descriptionHtml;
-  if (params.published !== undefined) {
-    input.publications = params.published
-      ? [{ publicationId: 'gid://shopify/Publication/1' }]
-      : [];
-  }
+  // Note: published is not supported in CollectionInput, collections are published by default
 
   const response = await client.request<CollectionCreateResponse>(
     COLLECTION_CREATE_MUTATION,

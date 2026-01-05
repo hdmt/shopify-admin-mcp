@@ -11,9 +11,12 @@ import { duplicateCollection } from './tools/collections/duplicateCollection.ts'
 import { getBlogs } from './tools/blog/getBlogs.ts';
 import { getArticles } from './tools/blog/getArticles.ts';
 import { createArticle } from './tools/blog/createArticle.ts';
+import { updateArticle } from './tools/blog/updateArticle.ts';
 import { getThemes } from './tools/themes/getThemes.ts';
 import { getThemeAsset } from './tools/themes/getThemeAsset.ts';
 import { updateThemeAsset } from './tools/themes/updateThemeAsset.ts';
+import { searchProducts } from './tools/products/searchProducts.ts';
+import { getProduct } from './tools/products/getProduct.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -268,6 +271,34 @@ server.tool(
   }
 );
 
+// Update article
+server.tool(
+  'update_article',
+  'Update an existing blog article',
+  {
+    id: z.string().describe('Article GID'),
+    title: z.string().optional().describe('New title'),
+    contentHtml: z.string().optional().describe('New content in HTML'),
+    author: z.string().optional().describe('Author name'),
+    tags: z.array(z.string()).optional().describe('Article tags'),
+    published: z.boolean().optional().describe('Whether to publish'),
+    publishedAt: z.string().optional().describe('Publish date (ISO8601)'),
+  },
+  async (params) => {
+    try {
+      const result = await updateArticle(shopifyClient, params);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
 // Get themes
 server.tool(
   'get_themes',
@@ -323,6 +354,57 @@ server.tool(
   async ({ themeId, key, value }) => {
     try {
       const result = await updateThemeAsset(shopifyClient, themeId, key, value);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Search products
+server.tool(
+  'search_products',
+  'Search products by title, vendor, product type, etc.',
+  {
+    query: z.string().optional().describe('Search query (e.g., "title:青汁" or "vendor:メーカー名")'),
+    first: z.number().optional().default(20).describe('Number of products to return'),
+  },
+  async (params) => {
+    try {
+      const result = await searchProducts(shopifyClient, params);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Get product detail
+server.tool(
+  'get_product',
+  'Get product details by ID or handle',
+  {
+    id: z.string().optional().describe('Product GID (e.g., gid://shopify/Product/123)'),
+    handle: z.string().optional().describe('Product handle (slug)'),
+  },
+  async (params) => {
+    try {
+      const result = await getProduct(shopifyClient, params);
+      if (!result) {
+        return {
+          content: [{ type: 'text' as const, text: 'Product not found' }],
+        };
+      }
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };

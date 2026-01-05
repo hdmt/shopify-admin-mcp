@@ -2,6 +2,7 @@ import type { ShopifyConfig, GraphQLResponse, ShopInfo } from './types.ts';
 
 export class ShopifyClient {
   private endpoint: string;
+  private restEndpoint: string;
   private accessToken: string;
 
   constructor(config?: ShopifyConfig) {
@@ -16,6 +17,7 @@ export class ShopifyClient {
     }
 
     this.endpoint = `https://${domain}/admin/api/2024-10/graphql.json`;
+    this.restEndpoint = `https://${domain}/admin/api/2024-10`;
     this.accessToken = token;
   }
 
@@ -62,5 +64,47 @@ export class ShopifyClient {
     `;
 
     return this.request<ShopInfo>(query);
+  }
+
+  async restGet<T>(path: string, params?: Record<string, string>): Promise<T> {
+    const url = new URL(`${this.restEndpoint}${path}`);
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.append(key, value);
+      });
+    }
+
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': this.accessToken,
+      },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Shopify REST API error: ${res.status} - ${text}`);
+    }
+
+    return (await res.json()) as T;
+  }
+
+  async restPut<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(`${this.restEndpoint}${path}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': this.accessToken,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Shopify REST API error: ${res.status} - ${text}`);
+    }
+
+    return (await res.json()) as T;
   }
 }

@@ -11,6 +11,9 @@ import { duplicateCollection } from './tools/collections/duplicateCollection.ts'
 import { getBlogs } from './tools/blog/getBlogs.ts';
 import { getArticles } from './tools/blog/getArticles.ts';
 import { createArticle } from './tools/blog/createArticle.ts';
+import { getThemes } from './tools/themes/getThemes.ts';
+import { getThemeAsset } from './tools/themes/getThemeAsset.ts';
+import { updateThemeAsset } from './tools/themes/updateThemeAsset.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -253,6 +256,73 @@ server.tool(
   async (params) => {
     try {
       const result = await createArticle(shopifyClient, params);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Get themes
+server.tool(
+  'get_themes',
+  'Get list of themes in the store',
+  {},
+  async () => {
+    try {
+      const result = await getThemes(shopifyClient);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Get theme asset
+server.tool(
+  'get_theme_asset',
+  'Get a specific file content from a theme',
+  {
+    themeId: z.number().describe('Theme ID'),
+    key: z.string().describe('Asset key (e.g., sections/featured-collection.liquid)'),
+  },
+  async ({ themeId, key }) => {
+    try {
+      const result = await getThemeAsset(shopifyClient, themeId, key);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Update theme asset
+server.tool(
+  'update_theme_asset',
+  'Create or update a file in a theme',
+  {
+    themeId: z.number().describe('Theme ID'),
+    key: z.string().describe('Asset key (e.g., sections/featured-collection-ranking.liquid)'),
+    value: z.string().describe('File content'),
+  },
+  async ({ themeId, key, value }) => {
+    try {
+      const result = await updateThemeAsset(shopifyClient, themeId, key, value);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };

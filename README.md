@@ -46,9 +46,13 @@ SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
 | `get_blogs` | ブログ一覧取得 |
 | `get_articles` | 記事一覧取得 |
 | `create_article` | 記事作成 |
+| `get_themes` | テーマ一覧取得 |
+| `get_theme_asset` | テーマファイル取得 |
+| `update_theme_asset` | テーマファイル作成・更新 |
 
 ## 必要なAPIスコープ
 
 - `read_orders`
 - `read_products`, `write_products`
 - `read_content`, `write_content`
+- `read_themes`, `write_themes`

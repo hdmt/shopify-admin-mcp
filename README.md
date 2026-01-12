@@ -1,21 +1,23 @@
 # Shopify Admin MCP
 
-Shopify Admin API操作用のMCPサーバー
+MCP server for Shopify Admin API operations
 
-## セットアップ
+[日本語版はこちら](README.ja.md)
+
+## Setup
 
 ```bash
 npm install
 ```
 
-## 環境変数
+## Environment Variables
 
 ```
 SHOPIFY_SHOP_DOMAIN=your-store.myshopify.com
 SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
 ```
 
-## Claude Desktop設定
+## Claude Desktop Configuration
 
 ```json
 {
@@ -32,50 +34,50 @@ SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
 }
 ```
 
-## ツール一覧
+## Available Tools
 
-### システム
+### System
 
-| ツール | 説明 |
-|--------|------|
-| `test_connection` | API接続確認 |
+| Tool | Description |
+|------|-------------|
+| `test_connection` | Test API connection |
 
-### 商品
+### Products
 
-| ツール | 説明 |
-|--------|------|
-| `search_products` | 商品検索（タイトル、ベンダー等） |
-| `get_product` | 商品詳細取得（ID or handle） |
-| `get_monthly_ranking` | 月間売上ランキング取得 |
+| Tool | Description |
+|------|-------------|
+| `search_products` | Search products (by title, vendor, etc.) |
+| `get_product` | Get product details (by ID or handle) |
+| `get_monthly_ranking` | Get monthly sales ranking |
 
-### コレクション
+### Collections
 
-| ツール | 説明 |
-|--------|------|
-| `get_collections` | コレクション検索・一覧 |
-| `get_collection` | コレクション詳細取得 |
-| `create_collection` | コレクション作成 |
-| `add_products_to_collection` | 商品追加・並び順設定 |
-| `duplicate_collection` | コレクション複製 |
+| Tool | Description |
+|------|-------------|
+| `get_collections` | Search and list collections |
+| `get_collection` | Get collection details |
+| `create_collection` | Create a collection |
+| `add_products_to_collection` | Add products and set sort order |
+| `duplicate_collection` | Duplicate a collection |
 
-### ブログ
+### Blog
 
-| ツール | 説明 |
-|--------|------|
-| `get_blogs` | ブログ一覧取得 |
-| `get_articles` | 記事一覧取得 |
-| `create_article` | 記事作成 |
-| `update_article` | 記事更新 |
+| Tool | Description |
+|------|-------------|
+| `get_blogs` | Get blog list |
+| `get_articles` | Get article list |
+| `create_article` | Create an article |
+| `update_article` | Update an article |
 
-### テーマ
+### Theme
 
-| ツール | 説明 |
-|--------|------|
-| `get_themes` | テーマ一覧取得 |
-| `get_theme_asset` | テーマファイル取得 |
-| `update_theme_asset` | テーマファイル作成・更新 |
+| Tool | Description |
+|------|-------------|
+| `get_themes` | Get theme list |
+| `get_theme_asset` | Get theme file |
+| `update_theme_asset` | Create or update theme file |
 
-## 必要なAPIスコープ
+## Required API Scopes
 
 - `read_orders`
 - `read_products`, `write_products`

@@ -17,6 +17,8 @@ import { getThemeAsset } from './tools/themes/getThemeAsset.ts';
 import { updateThemeAsset } from './tools/themes/updateThemeAsset.ts';
 import { searchProducts } from './tools/products/searchProducts.ts';
 import { getProduct } from './tools/products/getProduct.ts';
+import { getMenus } from './tools/menus/getMenus.ts';
+import { updateMenu } from './tools/menus/updateMenu.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -407,6 +409,63 @@ server.tool(
           content: [{ type: 'text' as const, text: 'Product not found' }],
         };
       }
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Get menus
+server.tool(
+  'get_menus',
+  'Get navigation menus with their items',
+  {
+    first: z.number().optional().default(10).describe('Number of menus to return'),
+  },
+  async ({ first }) => {
+    try {
+      const result = await getMenus(shopifyClient, first);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Update menu
+server.tool(
+  'update_menu',
+  'Update a navigation menu (title and items)',
+  {
+    id: z.string().describe('Menu GID (e.g., gid://shopify/Menu/123)'),
+    title: z.string().describe('Menu title'),
+    items: z.array(z.object({
+      title: z.string().describe('Menu item title'),
+      type: z.string().optional().describe('Item type (e.g., HTTP, COLLECTION, PRODUCT)'),
+      url: z.string().optional().describe('URL for HTTP type items'),
+      resourceId: z.string().optional().describe('Resource GID for COLLECTION/PRODUCT type items'),
+      items: z.array(z.object({
+        title: z.string(),
+        type: z.string().optional(),
+        url: z.string().optional(),
+        resourceId: z.string().optional(),
+      })).optional().describe('Nested menu items'),
+    })).describe('Menu items'),
+  },
+  async (params) => {
+    try {
+      const result = await updateMenu(shopifyClient, params);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };

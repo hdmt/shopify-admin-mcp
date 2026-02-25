@@ -43,7 +43,7 @@ interface UpdateMenuResult {
 }
 
 const MENU_UPDATE_MUTATION = `
-  mutation MenuUpdate($id: ID!, $title: String!, $items: [MenuItemInput!]!) {
+  mutation MenuUpdate($id: ID!, $title: String!, $items: [MenuItemUpdateInput!]!) {
     menuUpdate(id: $id, title: $title, items: $items) {
       menu {
         id

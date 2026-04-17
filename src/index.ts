@@ -19,6 +19,22 @@ import { searchProducts } from './tools/products/searchProducts.ts';
 import { getProduct } from './tools/products/getProduct.ts';
 import { getMenus } from './tools/menus/getMenus.ts';
 import { updateMenu } from './tools/menus/updateMenu.ts';
+import { getDiscounts } from './tools/discounts/getDiscounts.ts';
+import { getDiscount } from './tools/discounts/getDiscount.ts';
+import { createDiscountCodeBasic } from './tools/discounts/createDiscountCodeBasic.ts';
+import { updateDiscountCodeBasic } from './tools/discounts/updateDiscountCodeBasic.ts';
+import { createDiscountAutomaticBasic } from './tools/discounts/createDiscountAutomaticBasic.ts';
+import { updateDiscountAutomaticBasic } from './tools/discounts/updateDiscountAutomaticBasic.ts';
+import { createDiscountCodeBxgy } from './tools/discounts/createDiscountCodeBxgy.ts';
+import { updateDiscountCodeBxgy } from './tools/discounts/updateDiscountCodeBxgy.ts';
+import { createDiscountAutomaticBxgy } from './tools/discounts/createDiscountAutomaticBxgy.ts';
+import { updateDiscountAutomaticBxgy } from './tools/discounts/updateDiscountAutomaticBxgy.ts';
+import { createDiscountCodeFreeShipping } from './tools/discounts/createDiscountCodeFreeShipping.ts';
+import { updateDiscountCodeFreeShipping } from './tools/discounts/updateDiscountCodeFreeShipping.ts';
+import { createDiscountAutomaticFreeShipping } from './tools/discounts/createDiscountAutomaticFreeShipping.ts';
+import { updateDiscountAutomaticFreeShipping } from './tools/discounts/updateDiscountAutomaticFreeShipping.ts';
+import { activateDiscount } from './tools/discounts/activateDiscount.ts';
+import { deactivateDiscount } from './tools/discounts/deactivateDiscount.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -469,6 +485,486 @@ server.tool(
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// ===== Discount shared zod schemas =====
+const discountValueSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('percentage'), percentage: z.number().describe('0.0 - 1.0 (e.g., 0.1 = 10%)') }),
+  z.object({
+    type: z.literal('fixedAmount'),
+    amount: z.number().describe('Amount off in shop currency'),
+    appliesOnEachItem: z.boolean().optional(),
+  }),
+]);
+
+const discountItemsSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('all') }),
+  z.object({ type: z.literal('products'), productIds: z.array(z.string()) }),
+  z.object({ type: z.literal('collections'), collectionIds: z.array(z.string()) }),
+]);
+
+const customerSelectionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('all') }),
+  z.object({
+    type: z.literal('customers'),
+    customerIdsToAdd: z.array(z.string()).optional(),
+    customerIdsToRemove: z.array(z.string()).optional(),
+  }),
+  z.object({
+    type: z.literal('customerSegments'),
+    segmentIdsToAdd: z.array(z.string()).optional(),
+    segmentIdsToRemove: z.array(z.string()).optional(),
+  }),
+]);
+
+const minimumRequirementSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('quantity'), greaterThanOrEqualToQuantity: z.number() }),
+  z.object({ type: z.literal('subtotal'), greaterThanOrEqualToSubtotal: z.number() }),
+]);
+
+const combinesWithSchema = z.object({
+  productDiscounts: z.boolean().optional(),
+  orderDiscounts: z.boolean().optional(),
+  shippingDiscounts: z.boolean().optional(),
+});
+
+const bxgyBuysValueSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('quantity'), quantity: z.number() }),
+  z.object({ type: z.literal('amount'), amount: z.number() }),
+]);
+
+const bxgyGetsValueSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('percentage'), percentage: z.number().describe('0.0 - 1.0') }),
+  z.object({
+    type: z.literal('amount'),
+    amount: z.number(),
+    appliesOnEachItem: z.boolean().optional(),
+  }),
+  z.object({
+    type: z.literal('discountOnQuantity'),
+    quantity: z.number(),
+    effect: z.object({ type: z.literal('percentage'), percentage: z.number() }),
+  }),
+]);
+
+const shippingDestinationSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('all') }),
+  z.object({
+    type: z.literal('countries'),
+    countryCodes: z.array(z.string()).describe('ISO country codes (e.g., ["JP", "US"])'),
+    includeRestOfWorld: z.boolean().optional(),
+  }),
+]);
+
+const moneyInputSchema = z.object({
+  amount: z.number().describe('Money amount (decimal)'),
+  currencyCode: z.string().describe('ISO currency code (e.g., JPY, USD)'),
+});
+
+// ===== Discount tools =====
+
+server.tool(
+  'get_discounts',
+  'List all discounts (code + automatic)',
+  {
+    first: z.number().optional().default(20).describe('Number of discounts to return'),
+    after: z.string().optional().describe('Pagination cursor'),
+    query: z.string().optional().describe('Search query (e.g., "status:active", "method:automatic")'),
+  },
+  async (params) => {
+    try {
+      const result = await getDiscounts(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'get_discount',
+  'Get a single discount detail by ID',
+  { id: z.string().describe('Discount GID (e.g., gid://shopify/DiscountCodeNode/123)') },
+  async ({ id }) => {
+    try {
+      const result = await getDiscount(shopifyClient, id);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_code_basic',
+  'Create a basic code discount (amount/percentage off products)',
+  {
+    title: z.string(),
+    code: z.string().describe('Coupon code (e.g., SPRING10)'),
+    startsAt: z.string().describe('ISO8601 datetime'),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }),
+    customerSelection: customerSelectionSchema,
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountCodeBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_code_basic',
+  'Update an existing basic code discount',
+  {
+    id: z.string().describe('Discount GID'),
+    title: z.string().optional(),
+    code: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }).optional(),
+    customerSelection: customerSelectionSchema.optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountCodeBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_automatic_basic',
+  'Create an automatic basic discount (amount/percentage off, auto-applied at checkout)',
+  {
+    title: z.string(),
+    startsAt: z.string().describe('ISO8601 datetime'),
+    endsAt: z.string().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountAutomaticBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_automatic_basic',
+  'Update an existing automatic basic discount',
+  {
+    id: z.string().describe('Discount GID'),
+    title: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }).optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountAutomaticBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_code_bxgy',
+  'Create a BXGY code discount (buy X get Y)',
+  {
+    title: z.string(),
+    code: z.string(),
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }),
+    customerSelection: customerSelectionSchema,
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountCodeBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_code_bxgy',
+  'Update an existing BXGY code discount',
+  {
+    id: z.string(),
+    title: z.string().optional(),
+    code: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }).optional(),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }).optional(),
+    customerSelection: customerSelectionSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountCodeBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_automatic_bxgy',
+  'Create an automatic BXGY discount',
+  {
+    title: z.string().optional(),
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountAutomaticBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_automatic_bxgy',
+  'Update an existing automatic BXGY discount',
+  {
+    id: z.string(),
+    title: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }).optional(),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }).optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountAutomaticBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_code_free_shipping',
+  'Create a free shipping code discount',
+  {
+    title: z.string(),
+    code: z.string(),
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerSelection: customerSelectionSchema,
+    destination: shippingDestinationSchema,
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountCodeFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_code_free_shipping',
+  'Update an existing free shipping code discount',
+  {
+    id: z.string(),
+    title: z.string().optional(),
+    code: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerSelection: customerSelectionSchema.optional(),
+    destination: shippingDestinationSchema.optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountCodeFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_automatic_free_shipping',
+  'Create an automatic free shipping discount',
+  {
+    title: z.string(),
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
+    combinesWith: combinesWithSchema.optional(),
+    destination: shippingDestinationSchema,
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountAutomaticFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_automatic_free_shipping',
+  'Update an existing automatic free shipping discount',
+  {
+    id: z.string(),
+    title: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
+    combinesWith: combinesWithSchema.optional(),
+    destination: shippingDestinationSchema.optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountAutomaticFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'activate_discount',
+  'Activate a discount (enable)',
+  {
+    id: z.string().describe('Discount GID'),
+    type: z.enum(['code', 'automatic']).describe('Discount type'),
+  },
+  async (params) => {
+    try {
+      const result = await activateDiscount(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'deactivate_discount',
+  'Deactivate a discount (disable)',
+  {
+    id: z.string().describe('Discount GID'),
+    type: z.enum(['code', 'automatic']).describe('Discount type'),
+  },
+  async (params) => {
+    try {
+      const result = await deactivateDiscount(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     } catch (error) {
       return {
         content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],

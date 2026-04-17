@@ -106,6 +106,7 @@ const DISCOUNT_NODE_QUERY = `
           }
         }
         ... on DiscountAutomaticBxgy {
+          title
           status
           startsAt
           endsAt

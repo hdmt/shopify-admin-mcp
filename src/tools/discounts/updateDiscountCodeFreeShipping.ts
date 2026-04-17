@@ -8,6 +8,7 @@ import {
 } from './helpers.ts';
 import {
   buildShippingDestination,
+  type MoneyInput,
   type ShippingDestinationInput,
 } from './createDiscountCodeFreeShipping.ts';
 
@@ -38,7 +39,7 @@ export interface UpdateDiscountCodeFreeShippingParams {
   endsAt?: string;
   usageLimit?: number;
   appliesOncePerCustomer?: boolean;
-  maximumShippingPrice?: number;
+  maximumShippingPrice?: MoneyInput;
   combinesWith?: {
     productDiscounts?: boolean;
     orderDiscounts?: boolean;

@@ -43,6 +43,11 @@ const MUTATION = `
   }
 `;
 
+export interface MoneyInput {
+  amount: number;
+  currencyCode: string;
+}
+
 export interface CreateDiscountCodeFreeShippingParams {
   title: string;
   code: string;
@@ -50,7 +55,7 @@ export interface CreateDiscountCodeFreeShippingParams {
   endsAt?: string;
   usageLimit?: number;
   appliesOncePerCustomer?: boolean;
-  maximumShippingPrice?: number;
+  maximumShippingPrice?: MoneyInput;
   combinesWith?: {
     productDiscounts?: boolean;
     orderDiscounts?: boolean;

@@ -24,7 +24,7 @@ const AUTOMATIC_MUTATION = `
         id
         automaticDiscount {
           ... on DiscountAutomaticBasic { title status }
-          ... on DiscountAutomaticBxgy { status }
+          ... on DiscountAutomaticBxgy { title status }
           ... on DiscountAutomaticFreeShipping { title status }
         }
       }

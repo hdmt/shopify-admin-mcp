@@ -80,6 +80,7 @@ const DISCOUNT_NODES_QUERY = `
               asyncUsageCount
             }
             ... on DiscountAutomaticBxgy {
+              title
               status
               startsAt
               endsAt

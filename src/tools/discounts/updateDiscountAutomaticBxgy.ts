@@ -16,6 +16,7 @@ const MUTATION = `
         id
         automaticDiscount {
           ... on DiscountAutomaticBxgy {
+            title
             status
             startsAt
             endsAt
@@ -29,6 +30,7 @@ const MUTATION = `
 
 export interface UpdateDiscountAutomaticBxgyParams {
   id: string;
+  title?: string;
   startsAt?: string;
   endsAt?: string;
   usesPerOrderLimit?: number;
@@ -54,6 +56,7 @@ export async function updateDiscountAutomaticBxgy(
   const { id, ...rest } = params;
   const input: Record<string, unknown> = {};
 
+  if (rest.title !== undefined) input.title = rest.title;
   if (rest.startsAt !== undefined) input.startsAt = rest.startsAt;
   if (rest.endsAt !== undefined) input.endsAt = rest.endsAt;
   if (rest.usesPerOrderLimit !== undefined) input.usesPerOrderLimit = rest.usesPerOrderLimit;

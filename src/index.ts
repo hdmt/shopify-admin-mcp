@@ -563,6 +563,11 @@ const shippingDestinationSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
+const moneyInputSchema = z.object({
+  amount: z.number().describe('Money amount (decimal)'),
+  currencyCode: z.string().describe('ISO currency code (e.g., JPY, USD)'),
+});
+
 // ===== Discount tools =====
 
 server.tool(
@@ -772,6 +777,7 @@ server.tool(
   'create_discount_automatic_bxgy',
   'Create an automatic BXGY discount',
   {
+    title: z.string().optional(),
     startsAt: z.string(),
     endsAt: z.string().optional(),
     usesPerOrderLimit: z.number().optional(),
@@ -797,6 +803,7 @@ server.tool(
   'Update an existing automatic BXGY discount',
   {
     id: z.string(),
+    title: z.string().optional(),
     startsAt: z.string().optional(),
     endsAt: z.string().optional(),
     usesPerOrderLimit: z.number().optional(),
@@ -827,7 +834,7 @@ server.tool(
     endsAt: z.string().optional(),
     usageLimit: z.number().optional(),
     appliesOncePerCustomer: z.boolean().optional(),
-    maximumShippingPrice: z.number().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
     combinesWith: combinesWithSchema.optional(),
     customerSelection: customerSelectionSchema,
     destination: shippingDestinationSchema,
@@ -857,7 +864,7 @@ server.tool(
     endsAt: z.string().optional(),
     usageLimit: z.number().optional(),
     appliesOncePerCustomer: z.boolean().optional(),
-    maximumShippingPrice: z.number().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
     combinesWith: combinesWithSchema.optional(),
     customerSelection: customerSelectionSchema.optional(),
     destination: shippingDestinationSchema.optional(),
@@ -883,7 +890,7 @@ server.tool(
     title: z.string(),
     startsAt: z.string(),
     endsAt: z.string().optional(),
-    maximumShippingPrice: z.number().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
     combinesWith: combinesWithSchema.optional(),
     destination: shippingDestinationSchema,
     minimumRequirement: minimumRequirementSchema.optional(),
@@ -909,7 +916,7 @@ server.tool(
     title: z.string().optional(),
     startsAt: z.string().optional(),
     endsAt: z.string().optional(),
-    maximumShippingPrice: z.number().optional(),
+    maximumShippingPrice: moneyInputSchema.optional(),
     combinesWith: combinesWithSchema.optional(),
     destination: shippingDestinationSchema.optional(),
     minimumRequirement: minimumRequirementSchema.optional(),

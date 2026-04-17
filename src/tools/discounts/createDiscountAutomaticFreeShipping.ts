@@ -6,6 +6,7 @@ import {
 } from './helpers.ts';
 import {
   buildShippingDestination,
+  type MoneyInput,
   type ShippingDestinationInput,
 } from './createDiscountCodeFreeShipping.ts';
 
@@ -32,7 +33,7 @@ export interface CreateDiscountAutomaticFreeShippingParams {
   title: string;
   startsAt: string;
   endsAt?: string;
-  maximumShippingPrice?: number;
+  maximumShippingPrice?: MoneyInput;
   combinesWith?: {
     productDiscounts?: boolean;
     orderDiscounts?: boolean;

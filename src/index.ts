@@ -19,6 +19,8 @@ import { searchProducts } from './tools/products/searchProducts.ts';
 import { getProduct } from './tools/products/getProduct.ts';
 import { getMenus } from './tools/menus/getMenus.ts';
 import { updateMenu } from './tools/menus/updateMenu.ts';
+import { getDiscounts } from './tools/discounts/getDiscounts.ts';
+import { getDiscount } from './tools/discounts/getDiscount.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -477,6 +479,116 @@ server.tool(
     }
   }
 );
+
+// ===== Discount shared zod schemas =====
+const discountValueSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('percentage'), percentage: z.number().describe('0.0 - 1.0 (e.g., 0.1 = 10%)') }),
+  z.object({
+    type: z.literal('fixedAmount'),
+    amount: z.number().describe('Amount off in shop currency'),
+    appliesOnEachItem: z.boolean().optional(),
+  }),
+]);
+
+const discountItemsSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('all') }),
+  z.object({ type: z.literal('products'), productIds: z.array(z.string()) }),
+  z.object({ type: z.literal('collections'), collectionIds: z.array(z.string()) }),
+]);
+
+const customerSelectionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('all') }),
+  z.object({
+    type: z.literal('customers'),
+    customerIdsToAdd: z.array(z.string()).optional(),
+    customerIdsToRemove: z.array(z.string()).optional(),
+  }),
+  z.object({
+    type: z.literal('customerSegments'),
+    segmentIdsToAdd: z.array(z.string()).optional(),
+    segmentIdsToRemove: z.array(z.string()).optional(),
+  }),
+]);
+
+const minimumRequirementSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('quantity'), greaterThanOrEqualToQuantity: z.number() }),
+  z.object({ type: z.literal('subtotal'), greaterThanOrEqualToSubtotal: z.number() }),
+]);
+
+const combinesWithSchema = z.object({
+  productDiscounts: z.boolean().optional(),
+  orderDiscounts: z.boolean().optional(),
+  shippingDiscounts: z.boolean().optional(),
+});
+
+const bxgyBuysValueSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('quantity'), quantity: z.number() }),
+  z.object({ type: z.literal('amount'), amount: z.number() }),
+]);
+
+const bxgyGetsValueSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('percentage'), percentage: z.number().describe('0.0 - 1.0') }),
+  z.object({
+    type: z.literal('amount'),
+    amount: z.number(),
+    appliesOnEachItem: z.boolean().optional(),
+  }),
+  z.object({
+    type: z.literal('discountOnQuantity'),
+    quantity: z.number(),
+    effect: z.object({ type: z.literal('percentage'), percentage: z.number() }),
+  }),
+]);
+
+const shippingDestinationSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('all') }),
+  z.object({
+    type: z.literal('countries'),
+    countryCodes: z.array(z.string()).describe('ISO country codes (e.g., ["JP", "US"])'),
+    includeRestOfWorld: z.boolean().optional(),
+  }),
+]);
+
+// ===== Discount tools =====
+
+server.tool(
+  'get_discounts',
+  'List all discounts (code + automatic)',
+  {
+    first: z.number().optional().default(20).describe('Number of discounts to return'),
+    after: z.string().optional().describe('Pagination cursor'),
+    query: z.string().optional().describe('Search query (e.g., "status:active", "method:automatic")'),
+  },
+  async (params) => {
+    try {
+      const result = await getDiscounts(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'get_discount',
+  'Get a single discount detail by ID',
+  { id: z.string().describe('Discount GID (e.g., gid://shopify/DiscountCodeNode/123)') },
+  async ({ id }) => {
+    try {
+      const result = await getDiscount(shopifyClient, id);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
 
 async function main() {
   const transport = new StdioServerTransport();

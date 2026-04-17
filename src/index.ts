@@ -21,6 +21,10 @@ import { getMenus } from './tools/menus/getMenus.ts';
 import { updateMenu } from './tools/menus/updateMenu.ts';
 import { getDiscounts } from './tools/discounts/getDiscounts.ts';
 import { getDiscount } from './tools/discounts/getDiscount.ts';
+import { createDiscountCodeBasic } from './tools/discounts/createDiscountCodeBasic.ts';
+import { updateDiscountCodeBasic } from './tools/discounts/updateDiscountCodeBasic.ts';
+import { createDiscountAutomaticBasic } from './tools/discounts/createDiscountAutomaticBasic.ts';
+import { updateDiscountAutomaticBasic } from './tools/discounts/updateDiscountAutomaticBasic.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -589,6 +593,111 @@ server.tool(
   }
 );
 
+server.tool(
+  'create_discount_code_basic',
+  'Create a basic code discount (amount/percentage off products)',
+  {
+    title: z.string(),
+    code: z.string().describe('Coupon code (e.g., SPRING10)'),
+    startsAt: z.string().describe('ISO8601 datetime'),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }),
+    customerSelection: customerSelectionSchema,
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountCodeBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_code_basic',
+  'Update an existing basic code discount',
+  {
+    id: z.string().describe('Discount GID'),
+    title: z.string().optional(),
+    code: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }).optional(),
+    customerSelection: customerSelectionSchema.optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountCodeBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_automatic_basic',
+  'Create an automatic basic discount (amount/percentage off, auto-applied at checkout)',
+  {
+    title: z.string(),
+    startsAt: z.string().describe('ISO8601 datetime'),
+    endsAt: z.string().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountAutomaticBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_automatic_basic',
+  'Update an existing automatic basic discount',
+  {
+    id: z.string().describe('Discount GID'),
+    title: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerGets: z.object({ value: discountValueSchema, items: discountItemsSchema }).optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountAutomaticBasic(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
 
 async function main() {
   const transport = new StdioServerTransport();

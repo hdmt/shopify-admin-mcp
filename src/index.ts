@@ -33,6 +33,8 @@ import { createDiscountCodeFreeShipping } from './tools/discounts/createDiscount
 import { updateDiscountCodeFreeShipping } from './tools/discounts/updateDiscountCodeFreeShipping.ts';
 import { createDiscountAutomaticFreeShipping } from './tools/discounts/createDiscountAutomaticFreeShipping.ts';
 import { updateDiscountAutomaticFreeShipping } from './tools/discounts/updateDiscountAutomaticFreeShipping.ts';
+import { activateDiscount } from './tools/discounts/activateDiscount.ts';
+import { deactivateDiscount } from './tools/discounts/deactivateDiscount.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -915,6 +917,46 @@ server.tool(
   async (params) => {
     try {
       const result = await updateDiscountAutomaticFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'activate_discount',
+  'Activate a discount (enable)',
+  {
+    id: z.string().describe('Discount GID'),
+    type: z.enum(['code', 'automatic']).describe('Discount type'),
+  },
+  async (params) => {
+    try {
+      const result = await activateDiscount(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'deactivate_discount',
+  'Deactivate a discount (disable)',
+  {
+    id: z.string().describe('Discount GID'),
+    type: z.enum(['code', 'automatic']).describe('Discount type'),
+  },
+  async (params) => {
+    try {
+      const result = await deactivateDiscount(shopifyClient, params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     } catch (error) {
       return {

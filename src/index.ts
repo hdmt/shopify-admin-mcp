@@ -25,6 +25,10 @@ import { createDiscountCodeBasic } from './tools/discounts/createDiscountCodeBas
 import { updateDiscountCodeBasic } from './tools/discounts/updateDiscountCodeBasic.ts';
 import { createDiscountAutomaticBasic } from './tools/discounts/createDiscountAutomaticBasic.ts';
 import { updateDiscountAutomaticBasic } from './tools/discounts/updateDiscountAutomaticBasic.ts';
+import { createDiscountCodeBxgy } from './tools/discounts/createDiscountCodeBxgy.ts';
+import { updateDiscountCodeBxgy } from './tools/discounts/updateDiscountCodeBxgy.ts';
+import { createDiscountAutomaticBxgy } from './tools/discounts/createDiscountAutomaticBxgy.ts';
+import { updateDiscountAutomaticBxgy } from './tools/discounts/updateDiscountAutomaticBxgy.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -698,6 +702,115 @@ server.tool(
     }
   }
 );
+
+server.tool(
+  'create_discount_code_bxgy',
+  'Create a BXGY code discount (buy X get Y)',
+  {
+    title: z.string(),
+    code: z.string(),
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }),
+    customerSelection: customerSelectionSchema,
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountCodeBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_code_bxgy',
+  'Update an existing BXGY code discount',
+  {
+    id: z.string(),
+    title: z.string().optional(),
+    code: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }).optional(),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }).optional(),
+    customerSelection: customerSelectionSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountCodeBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_automatic_bxgy',
+  'Create an automatic BXGY discount',
+  {
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountAutomaticBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_automatic_bxgy',
+  'Update an existing automatic BXGY discount',
+  {
+    id: z.string(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usesPerOrderLimit: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerBuys: z.object({ value: bxgyBuysValueSchema, items: discountItemsSchema }).optional(),
+    customerGets: z.object({ value: bxgyGetsValueSchema, items: discountItemsSchema }).optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountAutomaticBxgy(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
 
 async function main() {
   const transport = new StdioServerTransport();

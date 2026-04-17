@@ -29,6 +29,10 @@ import { createDiscountCodeBxgy } from './tools/discounts/createDiscountCodeBxgy
 import { updateDiscountCodeBxgy } from './tools/discounts/updateDiscountCodeBxgy.ts';
 import { createDiscountAutomaticBxgy } from './tools/discounts/createDiscountAutomaticBxgy.ts';
 import { updateDiscountAutomaticBxgy } from './tools/discounts/updateDiscountAutomaticBxgy.ts';
+import { createDiscountCodeFreeShipping } from './tools/discounts/createDiscountCodeFreeShipping.ts';
+import { updateDiscountCodeFreeShipping } from './tools/discounts/updateDiscountCodeFreeShipping.ts';
+import { createDiscountAutomaticFreeShipping } from './tools/discounts/createDiscountAutomaticFreeShipping.ts';
+import { updateDiscountAutomaticFreeShipping } from './tools/discounts/updateDiscountAutomaticFreeShipping.ts';
 
 const server = new McpServer({
   name: 'shopify-admin',
@@ -811,6 +815,115 @@ server.tool(
   }
 );
 
+server.tool(
+  'create_discount_code_free_shipping',
+  'Create a free shipping code discount',
+  {
+    title: z.string(),
+    code: z.string(),
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    maximumShippingPrice: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerSelection: customerSelectionSchema,
+    destination: shippingDestinationSchema,
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountCodeFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_code_free_shipping',
+  'Update an existing free shipping code discount',
+  {
+    id: z.string(),
+    title: z.string().optional(),
+    code: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    usageLimit: z.number().optional(),
+    appliesOncePerCustomer: z.boolean().optional(),
+    maximumShippingPrice: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    customerSelection: customerSelectionSchema.optional(),
+    destination: shippingDestinationSchema.optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountCodeFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'create_discount_automatic_free_shipping',
+  'Create an automatic free shipping discount',
+  {
+    title: z.string(),
+    startsAt: z.string(),
+    endsAt: z.string().optional(),
+    maximumShippingPrice: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    destination: shippingDestinationSchema,
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await createDiscountAutomaticFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
+  'update_discount_automatic_free_shipping',
+  'Update an existing automatic free shipping discount',
+  {
+    id: z.string(),
+    title: z.string().optional(),
+    startsAt: z.string().optional(),
+    endsAt: z.string().optional(),
+    maximumShippingPrice: z.number().optional(),
+    combinesWith: combinesWithSchema.optional(),
+    destination: shippingDestinationSchema.optional(),
+    minimumRequirement: minimumRequirementSchema.optional(),
+  },
+  async (params) => {
+    try {
+      const result = await updateDiscountAutomaticFreeShipping(shopifyClient, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
 
 async function main() {
   const transport = new StdioServerTransport();

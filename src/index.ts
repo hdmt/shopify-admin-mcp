@@ -17,6 +17,9 @@ import { getThemeAsset } from './tools/themes/getThemeAsset.ts';
 import { updateThemeAsset } from './tools/themes/updateThemeAsset.ts';
 import { searchProducts } from './tools/products/searchProducts.ts';
 import { getProduct } from './tools/products/getProduct.ts';
+import { createProduct } from './tools/products/createProduct.ts';
+import { updateProduct } from './tools/products/updateProduct.ts';
+import { uploadProductImage } from './tools/products/uploadProductImage.ts';
 import { getMenus } from './tools/menus/getMenus.ts';
 import { updateMenu } from './tools/menus/updateMenu.ts';
 import { getDiscounts } from './tools/discounts/getDiscounts.ts';
@@ -425,6 +428,102 @@ server.tool(
           content: [{ type: 'text' as const, text: 'Product not found' }],
         };
       }
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Create product
+server.tool(
+  'create_product',
+  'Create a new product with optional variants',
+  {
+    title: z.string().describe('Product title'),
+    descriptionHtml: z.string().optional().describe('Product description (HTML)'),
+    vendor: z.string().optional().describe('Product vendor'),
+    productType: z.string().optional().describe('Product type'),
+    tags: z.array(z.string()).optional().describe('Product tags'),
+    status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional().default('DRAFT').describe('Product status (default: DRAFT)'),
+    variants: z.array(z.object({
+      price: z.string().describe('Variant price (e.g., "1000")'),
+      sku: z.string().optional().describe('SKU'),
+      compareAtPrice: z.string().optional().describe('Compare at price'),
+      barcode: z.string().optional().describe('Barcode'),
+      weight: z.number().optional().describe('Weight value'),
+      weightUnit: z.enum(['KILOGRAMS', 'GRAMS', 'POUNDS', 'OUNCES']).optional().describe('Weight unit'),
+      requiresShipping: z.boolean().optional().describe('Requires shipping'),
+      taxable: z.boolean().optional().describe('Taxable'),
+      inventoryManagement: z.enum(['SHOPIFY', 'NOT_MANAGED']).optional().describe('Inventory management'),
+    })).optional().describe('Product variants'),
+  },
+  async (params) => {
+    try {
+      const result = await createProduct(shopifyClient, params);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Update product
+server.tool(
+  'update_product',
+  'Update an existing product\'s basic information',
+  {
+    id: z.string().describe('Product GID (e.g., gid://shopify/Product/123)'),
+    title: z.string().optional().describe('Product title'),
+    descriptionHtml: z.string().optional().describe('Product description (HTML)'),
+    vendor: z.string().optional().describe('Product vendor'),
+    productType: z.string().optional().describe('Product type'),
+    tags: z.array(z.string()).optional().describe('Product tags (replaces all existing tags)'),
+    status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']).optional().describe('Product status'),
+    seo: z.object({
+      title: z.string().optional().describe('SEO title'),
+      description: z.string().optional().describe('SEO description'),
+    }).optional().describe('SEO settings'),
+  },
+  async (params) => {
+    try {
+      const result = await updateProduct(shopifyClient, params);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Upload product images
+server.tool(
+  'upload_product_image',
+  'Add images to a product from URLs',
+  {
+    productId: z.string().describe('Product GID (e.g., gid://shopify/Product/123)'),
+    images: z.array(z.object({
+      originalSource: z.string().describe('Image URL (must be publicly accessible)'),
+      alt: z.string().optional().describe('Alt text for the image'),
+    })).describe('Images to add'),
+  },
+  async (params) => {
+    try {
+      const result = await uploadProductImage(shopifyClient, params);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };

@@ -48,6 +48,9 @@ SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
 |------|-------------|
 | `search_products` | Search products (by title, vendor, etc.) |
 | `get_product` | Get product details (by ID or handle) |
+| `create_product` | Create a new product with optional variants |
+| `update_product` | Update product info (title, description, status, SEO, etc.) |
+| `upload_product_image` | Add images to a product from public URLs |
 | `get_monthly_ranking` | Get monthly sales ranking |
 
 ### Collections
